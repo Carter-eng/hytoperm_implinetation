@@ -6,11 +6,11 @@ The following instructions for setting up the python environment
 below match those in the original repo. Ensure that you are in the correct
 repo and execute the following commands
 
- $ virtualenv env --python=python3
- 
- $ source env/bin/activate
- 
- $ pip install -e .
+'''
+$ virtualenv env --python=python3 
+$ source env/bin/activate
+$ pip install -e .
+'''
 
 From here the directions will varry depending on whether you are running
 the physical implimentation or a simulated implimentation.
