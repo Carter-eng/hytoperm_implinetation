@@ -62,24 +62,13 @@ class LQR:
         :return: B matrix ---> 4x2 NumPy array (models how system responds to control inputs)
         """
 
-        # A = np.array([
-        #     [1,0,0,np.cos(theta+2.35)*self.dt],
-        #     [0,1,0,np.sin(theta+2.35)*self.dt],
-        #     [0,0,1,0],
-        #     [0,0,0,1]
-        #     ])
         A = np.array([
             [1,0,0,np.cos(theta)*self.dt],
             [0,1,0,np.sin(theta)*self.dt],
             [0,0,1,0],
             [0,0,0,1]
             ])
-        # B = np.array([
-        #     [0,np.cos(theta+2.35)*self.dt],
-        #     [0,np.sin(theta+2.35)*self.dt],
-        #     [self.dt,0],
-        #     [0,1]
-        # ])
+
         B = np.array([
             [0,np.cos(theta)*self.dt],
             [0,np.sin(theta)*self.dt],
