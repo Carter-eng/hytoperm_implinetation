@@ -1,12 +1,21 @@
+"""
+This file is meant to first call the hytoperm code to generate a trajectory
+then create a simulated tracking controller to follow the trajectory.
+This will create a new folder which is the minumum unused trial number.
+I save each trajectory and the world plot for use later if desired.
+"""
+
 import matplotlib.pyplot as plt
 from hytoperm import *
-from pprint import pprint
 import pickle
 from RUN_LIMO_1 import *
 import json
 import os
-# generate and plot the expriment setup
+
 def expandSwitchingSegment(ptraj,utraj,num_points):
+    #this method is meant for the switching segments. The original code has saves only the 
+    #first and last points contained in teach segment, this expands it to a tunamble number of points
+    #using linear interpolation. here ptraj is the points and utraj are the controls
     p1 = ptraj[:,:1]
     p2 = ptraj[:,-1:]
     u = utraj[:,-1:]
@@ -20,38 +29,59 @@ def expandSwitchingSegment(ptraj,utraj,num_points):
     return out_ptraj, out_utraj
 
 def getDynamics(world,traj):
+    # If you want to account for or find the hybrid dynamics of a region containing
+    # segment, this returns them.
+
+    #the first point in a segment may lie on a border and return the wrong dynamics,
+    #choosing the second point helps ensure that we are in the correct regions
     p = traj[:,1:2]
     dynamics = world.getRegion(p).dynamics().v()
-
     return dynamics
+    
 def zeroRegions(world):
+    #this eliminates the hybrid dynamics, if you want trajectories planned without them
     for region in world._regions:
         region.setV(np.zeros((2)))
 
 class World:
+    """
+    This class will call and run the experiment. I chose to place this in the class 
+    to ease retrieving information in larger programs.
+    """
     def __init__(self) -> None:
+        #set up the running animation
         plt.ion()
-        num = 4
+        #minimum trial number, if the trial already exists this, we automatically iterate up so there is no reason to change this
+        num = 1
+        # generate experiment world, n_sets is the number of regions, and fraction is the percentage of regions containing targets
         ex = Experiment.generate(n_sets=15,fraction=0.2)
+        #eliminate hybrid dynamics
         zeroRegions(ex.world())
         fig, ax = ex.plotWorld()
-        # ex.agent().plotSensorQuality()
+        ex.agent().plotSensorQuality()
+        #use the rbbt to find a visiting sequence
         ex.agent().computeVisitingSequence()
+        #optimize the monitoring segments
         ex.agent().optimizeCycle()
 
+        #create a new directory to store trajectories
         fin = False
         while not fin:
             if os.path.isdir(f'trial{num}'):
                 num += 1
             else:
                 os.mkdir(f'trial{num}')
+                fin = True
+                
         count = 0
+        # In this we store the points and controls in the cycle as a whole.
+        # Storing both the points found as a whole and from stitching together individual segments gives additional trouble shooting options
         with open(f'trial{num}/cycleInfo{num}_total_points.json', "w") as final:
             json.dump(ex.agent()._cycle.pTrajectory.x.tolist(), final)
         with open(f'trial{num}/cycleInfo{num}_total_cntrls.json', "w") as final:
             json.dump(ex.agent()._cycle.uTrajectory.x.tolist(), final)
+        #store trajectory information segment by segment        
         for ts in ex.agent()._cycle._trajectorySegments:
-            
             ptraj = ts.pTrajectory.x
             utraj = ts.uTrajectory.x
             v = getDynamics(ex.world(),ptraj)
@@ -62,19 +92,26 @@ class World:
             with open(f'trial{num}/cycleInfo{num}_{count}_dynams.json', "w") as final:
                 json.dump(v.tolist(), final)
             count += 1
-        
+        # plot the optimal cycle
         ex.agent().plotCycle()
         plt.ioff()
         plt.show()
         fig, ax = ex.plotWorld()
         ex.agent().plotSensorQuality()
         ex.agent().plotCycle()
+        #load the points for the tracker to follow
         points,_ = loadPoints(2,len(ex.agent()._cycle._trajectorySegments))
+        #create a tracker, if running in simulation, the Limo name does not matter
         tracker = Tracker("limo770")
+        #I have had issues with the first point in a traj, starting at the second or third point is a workaround that may no longer be needed
         tracker.x = points[:,2:3]
+        # Follow using the PID, I found it works significantly better in this case than the LQR
         tracker.trackTrajectoryPID(points[:,2:],ex,stab_time = 7,fig = fig)
+        #save the final trajectory figure
         pickle.dump(fig,open(f'trial{num}/Worldplot{num}.pickle','wb'))
         plt.show()
+
+#The following functions are documented in the run_cycle_sim.py file. For more information check there.
 def angleCorrection(thetas):
     out = np.zeros(thetas.shape)
     out[0,0] = thetas[0,0]
@@ -89,10 +126,6 @@ def angleCorrection(thetas):
             else:
                 signal = 1
     return out
-
-# def loadFig(num):
-#     fig = pickle.load(open(f'trial{num}/Worldplot{num}.pickle','rb'))
-#     return fig
     
 def getThetas(points):
     thetas = np.zeros((1,points.shape[1]))
