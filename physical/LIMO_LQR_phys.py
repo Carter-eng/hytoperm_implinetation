@@ -62,24 +62,12 @@ class LQR:
         :return: B matrix ---> 4x2 NumPy array (models how system responds to control inputs)
         """
 
-        # A = np.array([
-        #     [1,0,0,np.cos(theta+2.35)*self.dt],
-        #     [0,1,0,np.sin(theta+2.35)*self.dt],
-        #     [0,0,1,0],
-        #     [0,0,0,1]
-        #     ])
         A = np.array([
             [1,0,0,0],
             [0,1,0,0],
             [0,0,1,0],
             [0,0,0,0]
             ])
-        # B = np.array([
-        #     [0,np.cos(theta+2.35)*self.dt],
-        #     [0,np.sin(theta+2.35)*self.dt],
-        #     [self.dt,0],
-        #     [0,1]
-        # ])
 
         B = np.array([
             [0,np.cos(theta)*self.dt],
@@ -157,12 +145,9 @@ class LQR:
         u_unclipped = u_star
         # Clip control based on min and max control inputs
         u_star[1,0] = np.clip(u_star[1,0],-1., 1.) # Clipped between -1 and 1 m/s
-        # u_star[0,0] = np.clip(u_star[0,0],np.sin(-1.)*(u_star[1,0])/self.L,np.sin(1.)*(u_star[1,0])/self.L) # clipped based on steering angle between -1 and 1 rads
         # Tell user if inputs were clipped
         if u_unclipped[1,0]!=u_star[1,0]:
             print('linear velocity clipped')
-        # if u_unclipped[0,0] != u_star[0,0]:
-        #     print('angular velocity clipped')
         return u_star
 
     def lqr(
