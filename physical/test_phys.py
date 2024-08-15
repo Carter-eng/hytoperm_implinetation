@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from hytoperm import *
 from pprint import pprint
 import pickle
-from RUN_LIMO_1 import *
+from RUN_LIMO_phys import *
 import json
 import os
 
