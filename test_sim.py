@@ -8,7 +8,7 @@ I save each trajectory and the world plot for use later if desired.
 import matplotlib.pyplot as plt
 from hytoperm import *
 import pickle
-from RUN_LIMO_1 import *
+from RUN_LIMO_sim import *
 import json
 import os
 
